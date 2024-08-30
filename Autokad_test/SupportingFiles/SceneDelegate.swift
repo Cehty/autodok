@@ -16,6 +16,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 		guard let _ = (scene as? UIWindowScene) else { return }
 		guard let window else { return }
 		
+		if #available(iOS 13.0, *) {
+			window.overrideUserInterfaceStyle = .dark
+		}
+		
 		newsCoordinator.start()
 		window.rootViewController = newsCoordinator.navigationController
 	}

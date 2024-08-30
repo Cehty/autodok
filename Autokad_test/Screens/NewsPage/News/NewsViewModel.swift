@@ -13,11 +13,12 @@ final class NewsViewModel {
 	enum Input {
 		case didLoad
 		case didSelectItem(indexPath: IndexPath, item: AnyHashable)
+		case willDisplay(indexPath: IndexPath)
 	}
 	
 	enum Output {
 		case apply(snapshot: NSDiffableDataSourceSnapshot<NewsSection, NewsCellViewModel>)
-		case fetchQuoteDidFail(error: Error)
+		case fetchDidFail(error: Error)
 	}
 	
 	var cancellables = Set<AnyCancellable>()
@@ -36,9 +37,11 @@ final class NewsViewModel {
 private extension NewsViewModel {
 	func makeModels() async {
 		do {
-			snapshot.deleteSections([.section])
-			snapshot.appendSections([.section])
-			guard let models: [News] = try await service.getModel() else { return }
+			let allItems = snapshot.itemIdentifiers
+			if allItems.isEmpty {
+				snapshot.appendSections([.section])
+			}
+			guard let models: [News] = try await service.getModel(count: allItems.count) else { return }
 
 			let items = try await withThrowingTaskGroup(of: NewsCellViewModel.self, returning: [NewsCellViewModel].self) { [weak self] group in
 				guard let self else { return [] }
@@ -55,19 +58,23 @@ private extension NewsViewModel {
 				return items
 			}
 			
-			let sortedItems = items.sorted { $0.getModel().publishedDate < $1.getModel().publishedDate }
+			let sortedItems = items.sorted { $0.getModel().publishedDate > $1.getModel().publishedDate }
 			
 			snapshot.appendItems(sortedItems, toSection: .section)
-			
+
 			output.send(.apply(snapshot: snapshot))
 		} catch {
-			output.send(.fetchQuoteDidFail(error: error))
+			output.send(.fetchDidFail(error: error))
 		}
 	}
 	
 	func makeImtem(for model: News) async throws -> NewsCellViewModel {
-		let image = try await imageLoader.fetchPhoto(url: model.titleImageUrl)
-		return NewsCellViewModel(model: model, image: image)
+		if let url = model.titleImageUrl {
+			let image = try await imageLoader.fetchPhoto(url: url)
+			return NewsCellViewModel(model: model, image: image)
+		} else {
+			return NewsCellViewModel(model: model, image: nil)
+		}
 	}
 }
 
@@ -84,6 +91,13 @@ extension NewsViewModel {
 				guard let item = item as? NewsCellViewModel else { return }
 				item.isShowedToggle()
 				output.send(.apply(snapshot: snapshot))
+			case .willDisplay(let indexPath): 
+				let items = snapshot.itemIdentifiers
+				if indexPath.row == items.count - 1 {
+					Task {
+						await self.makeModels()
+					}
+				}
 			}
 		}.store(in: &cancellables)
 		return output.eraseToAnyPublisher()

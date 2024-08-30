@@ -1,4 +1,4 @@
-//  
+//
 //  ViewCell.swift
 //  Autokad_test
 //
@@ -14,25 +14,25 @@ class NewsCell: UICollectionViewCell {
 		let stackView = UIStackView()
 		stackView.translatesAutoresizingMaskIntoConstraints = false
 		stackView.axis = .vertical
-		stackView.spacing = 8
+		stackView.spacing = UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8
 		return stackView
 	}()
-
-    private lazy var titleLabel: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
+	
+	private lazy var titleLabel: UILabel = {
+		let label = UILabel()
+		label.translatesAutoresizingMaskIntoConstraints = false
 		label.numberOfLines = 0
 		label.textColor = .white
-		label.font = .systemFont(ofSize: 21, weight: .bold)
-        return label
-    }()
+		label.font = .systemFont(ofSize: UIDevice.current.userInterfaceIdiom == .pad ? 31 : 21, weight: .bold)
+		return label
+	}()
 	
 	private lazy var dateLabel: UILabel = {
 		let label = UILabel()
 		label.translatesAutoresizingMaskIntoConstraints = false
 		label.textColor = .systemGray
 		label.textAlignment = .right
-		label.font = .systemFont(ofSize: 14, weight: .regular)
+		label.font = .systemFont(ofSize: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 14, weight: .regular)
 		return label
 	}()
 	
@@ -40,7 +40,7 @@ class NewsCell: UICollectionViewCell {
 		let label = UILabel()
 		label.translatesAutoresizingMaskIntoConstraints = false
 		label.textColor = .systemRed
-		label.font = .systemFont(ofSize: 14, weight: .regular)
+		label.font = .systemFont(ofSize: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 14, weight: .regular)
 		return label
 	}()
 	
@@ -49,7 +49,7 @@ class NewsCell: UICollectionViewCell {
 		label.translatesAutoresizingMaskIntoConstraints = false
 		label.textColor = .white
 		label.numberOfLines = 0
-		label.font = .systemFont(ofSize: 17, weight: .regular)
+		label.font = .systemFont(ofSize: UIDevice.current.userInterfaceIdiom == .pad ? 27 : 17, weight: .regular)
 		label.isHidden = true
 		return label
 	}()
@@ -64,25 +64,24 @@ class NewsCell: UICollectionViewCell {
 		let stackView = UIStackView()
 		stackView.translatesAutoresizingMaskIntoConstraints = false
 		stackView.axis = .horizontal
-		stackView.spacing = 5
 		stackView.isHidden = true
 		return stackView
 	}()
-
+	
 	override var isHighlighted: Bool {
 		didSet {
 			shrink(with: isHighlighted ? .down : .identity)
 		}
 	}
-
+	
 	private var viewModel: NewsCellViewModel?
 	private let input: PassthroughSubject<NewsCellViewModel.Input, Never> = .init()
 	private var cancellables = Set<AnyCancellable>()
-
+	
 	override init(frame: CGRect) {
 		super.init(frame: frame)
 		contentView.backgroundColor = .backView
-		contentView.layer.cornerRadius = 20
+		contentView.layer.cornerRadius = UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20
 		contentView.layer.masksToBounds = true
 		setupViews()
 	}
@@ -91,13 +90,13 @@ class NewsCell: UICollectionViewCell {
 	required init?(coder: NSCoder) {
 		fatalError("init(coder:) has not been implemented")
 	}
-
+	
 	override func prepareForReuse() {
 		super.prepareForReuse()
-		viewModel?.cancellables.forEach { $0.cancel() }
-		viewModel?.cancellables.removeAll()
+		cancellables.forEach { $0.cancel() }
+		cancellables.removeAll()
 	}
-
+	
 	func setup(with viewModel: NewsCellViewModel) {
 		self.viewModel = viewModel
 		bindViewModel()
@@ -115,7 +114,9 @@ private extension NewsCell {
 				guard let self else { return }
 				switch event {
 				case .setImage(let image):
-					self.imageView.image = image
+					if let image {
+						self.imageView.image = image
+					}
 					self.setupImageViewConstraints()
 				case .setTitle(let title):
 					self.titleLabel.text = title
@@ -126,15 +127,10 @@ private extension NewsCell {
 				case .setType(let type):
 					self.typeLabel.text = type
 				case .setIsShowed(let isShowed):
-					UIView.transition(with: self.descriptionLabel.self, duration: 0.23, options: .transitionCrossDissolve) { [weak self] in
-						self?.descriptionLabel.isHidden = !isShowed
-					}
-					
-					UIView.transition(with: self.horisontalStackView.self, duration: 0.23, options: .transitionCrossDissolve) { [weak self] in
-						self?.horisontalStackView.isHidden = !isShowed
-					}
+					self.descriptionLabel.isHidden = !isShowed
+					self.horisontalStackView.isHidden = !isShowed
 				}
-			}.store(in: &viewModel.cancellables)
+			}.store(in: &cancellables)
 	}
 }
 
@@ -147,22 +143,23 @@ private extension NewsCell {
 	
 	func setupImageView() {
 		contentView.addSubview(imageView)
-
+		
 		NSLayoutConstraint.activate([
 			imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
 			imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
 			imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
 		])
 	}
-
+	
 	func setupVerticalStackView() {
 		contentView.addSubview(verticalStackView)
-
+		let inset: CGFloat =  UIDevice.current.userInterfaceIdiom == .pad ? 26 : 16
+		
 		NSLayoutConstraint.activate([
-			verticalStackView.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 16),
-			verticalStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-			verticalStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-			verticalStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
+			verticalStackView.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: inset),
+			verticalStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: inset),
+			verticalStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -inset),
+			verticalStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -inset)
 		])
 		
 		verticalStackView.addArrangedSubview(horisontalStackView)
@@ -177,7 +174,7 @@ private extension NewsCell {
 	
 	func setupImageViewConstraints() {
 		let imageHeight = viewModel?.getImageSize(by: contentView.frame.width) ?? 0
-
+		
 		NSLayoutConstraint.activate([
 			imageView.heightAnchor.constraint(equalToConstant: imageHeight)
 		])

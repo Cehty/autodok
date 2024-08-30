@@ -20,8 +20,9 @@ struct News: Codable, Hashable {
 	let publishedDate: Date
 	let url: String
 	let fullUrl: String
-	let titleImageUrl: String
+	let titleImageUrl: String?
 	let categoryType: String
+	var isShowed: Bool = false
 	
 	init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -29,7 +30,6 @@ struct News: Codable, Hashable {
 		self.title = try container.decode(String.self, forKey: .title)
 		self.description = try container.decode(String.self, forKey: .description)
 		let publishedDate = try container.decode(String.self, forKey: .publishedDate)
-		print("ss \(publishedDate)")
 		let convertDate = AppDateFormatter.shared.date(from: publishedDate, dateFormat: .yyyyMMddHHmmssSSSZ)
 		if let convertDate {
 			self.publishedDate = convertDate
@@ -38,7 +38,7 @@ struct News: Codable, Hashable {
 		}
 		self.url = try container.decode(String.self, forKey: .url)
 		self.fullUrl = try container.decode(String.self, forKey: .fullUrl)
-		self.titleImageUrl = try container.decode(String.self, forKey: .titleImageUrl)
+		self.titleImageUrl = try container.decodeIfPresent(String.self, forKey: .titleImageUrl)
 		self.categoryType = try container.decode(String.self, forKey: .categoryType)
 	}
 	

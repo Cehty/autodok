@@ -16,7 +16,7 @@ class NewsCellViewModel: Hashable {
 	}
 	
 	enum Output {
-		case setImage(UIImage)
+		case setImage(UIImage?)
 		case setTitle(String)
 		case setDate(String)
 		case setDescription(String)
@@ -24,15 +24,15 @@ class NewsCellViewModel: Hashable {
 		case setIsShowed(Bool)
 	}
 	
-	var cancellables = Set<AnyCancellable>()
+	private var cancellables = Set<AnyCancellable>()
 
 	private let output: PassthroughSubject<Output, Never> = .init()
-	private var image: UIImage
+	private var image: UIImage?
 	private var isShowed = false
 
-    private let model: News
+	private var model: News
 
-	init(model: News, image: UIImage) {
+	init(model: News, image: UIImage?) {
         self.model = model
 		self.image = image
 	}
@@ -57,6 +57,11 @@ class NewsCellViewModel: Hashable {
 	static func == (lhs: NewsCellViewModel, rhs: NewsCellViewModel) -> Bool {
 		return lhs.model == rhs.model
 	}
+	
+	deinit {
+		cancellables.forEach { $0.cancel() }
+		cancellables.removeAll()
+	}
 }
 
 extension NewsCellViewModel {
@@ -71,12 +76,17 @@ extension NewsCellViewModel {
 				output.send(.setImage(image))
 				output.send(.setDescription(model.description))
 				output.send(.setType(model.categoryType))
+				output.send(.setIsShowed(isShowed))
 			}
 		}.store(in: &cancellables)
 		return output.eraseToAnyPublisher()
 	}
 	
 	func getImageSize(by width: CGFloat) -> CGFloat {
-		return image.size.height * width / image.size.width
+		if let image {
+			return image.size.height * width / image.size.width
+		} else {
+			return 200
+		}
 	}
 }

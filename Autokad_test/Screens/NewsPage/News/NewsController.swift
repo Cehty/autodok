@@ -92,7 +92,7 @@ private extension NewsController {
 				switch event {
 				case .apply(let snapshot):
 					self?.dataSource.apply(snapshot, animatingDifferences: true)
-				case .fetchQuoteDidFail(let error):
+				case .fetchDidFail(let error):
 					print("\(error)")
 				}
 			}.store(in: &viewModel.cancellables)
@@ -124,14 +124,17 @@ extension NewsController {
             guard let section = NewsSection(rawValue: section) else { return nil }
             switch section {
             case .section:
+				let horisontalInset: CGFloat =  UIDevice.current.userInterfaceIdiom == .pad ? 20 : 12
+				let verticalInset: CGFloat =  UIDevice.current.userInterfaceIdiom == .pad ? 28 : 16
                 let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(200))
                 let item = NSCollectionLayoutItem(layoutSize: itemSize)
                 
                 let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemSize, subitem: item, count: 1)
                 
                 let section = NSCollectionLayoutSection(group: group)
-                section.contentInsets = .init(top: 16, leading: 12, bottom: 16, trailing: 12)
-                section.interGroupSpacing = 24
+                section.contentInsets = .init(top: verticalInset, leading: horisontalInset, bottom: verticalInset, trailing: horisontalInset)
+				let spacing: CGFloat =  UIDevice.current.userInterfaceIdiom == .pad ? 36 : 24
+                section.interGroupSpacing = spacing
                 
                 return section
             }
@@ -145,4 +148,8 @@ extension NewsController: UICollectionViewDelegate {
         guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
 		input.send(.didSelectItem(indexPath: indexPath, item: item))
     }
+	
+	func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		input.send(.willDisplay(indexPath: indexPath))
+	}
 }
